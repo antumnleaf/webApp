@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, user-scalable=no,initial-scale=1.0,
+	maximum-scale=1.0, minimum-scale=1.0">
+	<link rel="stylesheet" href="index.css">
+	<link rel="stylesheet" href="swiper.css">
+	<script src="swiper.js"></script>
+	<script src="jQuery.js"></script>
+	<script src="jquery.transit.js"></script>
+	<script src="iscroll.js"></script>
+	<script src="hammer.js"></script>
+	<title>web</title>
+</head>
+
+<body>
+	<div class="swiper-container">
+	    <div class="swiper-wrapper">
+	        <div class="swiper-slide">Slide 1</div>
+	        <div class="swiper-slide">Slide 2</div>
+	        <div class="swiper-slide">Slide 3</div>
+	    </div>
+	    <!-- 如果需要分页器 -->
+	    <div class="swiper-pagination"></div>
+	    
+	    <!-- 如果需要导航按钮 -->
+	    <div class="swiper-button-prev"></div>
+	    <div class="swiper-button-next"></div>
+	    
+	    <!-- 如果需要滚动条 -->
+	    <!-- <div class="swiper-scrollbar"></div> -->
+	</div>
+
+	<div class="type">
+		<div class="project active">未完成</div>
+		<div class="dune">已完成</div>
+	</div>
+	<div class="content">
+		<ul class="item_list">
+			
+		</ul>
+	</div>
+
+	<div class="add">新增</div>
+
+	<div class="mask">
+		<div class="inputarea">
+			<textarea name="" id="text" cols="30" rows="10"></textarea>
+			<div class="submit">提交</div>
+			<div class="update">修改</div>
+			<div class="cancel">取消</div>
+		</div>
+	</div>
+<script>        
+   var swiper = new Swiper('.swiper-container', {
+      navigation: {
+        nextEl: '.swiper-button-next',
+        prevEl: '.swiper-button-prev',
+      },
+    });
+</script>
+<script>
+	var iscroll=new IScroll(".content",{
+	    mouseWheel: true,
+	    scrollbars: true,
+	    shrinkScrollbars: "clip"
+	});
+	var state="project";
+	$(".add").click(function(){
+		$(".mask").show();
+		$(".inputarea").transition({y:0});
+		$(".submit").show();
+		$(".update").hide();
+	})
+	$(".cancel").click(function(){
+		$(".inputarea").transition({y:"-62vh"},function(){
+			$(".mask").hide();
+		});
+		
+	})
+	$(".submit").click(function(){
+		var val=$("#text").val();
+		if(val==""){
+			return;
+		}
+		$("#text").val("");
+		var data=getData();
+		var time=new Date().getTime();
+		data.push({content:val,
+			time,
+			star:false,
+			done:false
+		});
+		saveData(data);
+		rende();
+		$(".inputarea").transition({y:"-62vh"},function(){
+			$(".mask").hide();
+		});
+	})
+	$(".update").click(function(){
+		var val=$("#text").val();
+		if(val==""){
+			return;
+		}
+		$("#text").val("");
+		var data=getData();
+		var index=$(this).data("index");
+		data[index].content=val;
+		saveData(data);
+		rende();
+		$(".inputarea").transition({y:"-62vh"},function(){
+			$(".mask").hide();
+		});
+	})
+	$(".project").click(function(){
+		$(this).addClass("active").siblings().removeClass("active");
+		state="project";
+		rende();
+	})
+	$(".dune").click(function(){
+		$(this).addClass("active").siblings().removeClass("active");
+		state="dune";
+		rende();
+	})
+	$(".item_list").on("click",".changestate",function(){
+		var index=$(this).parent().attr("id");
+		var data=getData();
+		data[index].done=true;
+		saveData(data);
+		rende();
+	})
+	.on("click",".del",function(){
+		var index=$(this).parent().attr("id");
+		var data=getData();
+		data.splice(index,1);
+		saveData(data);
+		rende();
+	})
+	.on("click","span",function(){
+		var index=$(this).parent().attr("id");
+		var data=getData();
+		data[index].star=!data[index].star;
+		saveData(data);
+		rende();
+	})
+	.on("click","p",function(){
+		var index=$(this).parent().attr("id");
+		var data=getData();
+		$(".mask").show();
+		$(".inputarea").transition({y:0});
+		$("#text").val(data[index].content);
+		$(".submit").hide();
+		$(".update").show();
+		$(".update").data("index",index);
+	})
+
+	function getData(){
+		return localStorage.message?JSON.parse(localStorage.message):localStorage.message=[];
+	}
+	function saveData(data){
+		localStorage.message=JSON.stringify(data);
+	}
+	function rende(){
+		var data=getData();
+		var str="";
+		data.forEach(function(ele,index){
+			if(state=="project"&&ele.done==false){
+				str+="<li id="+index+"><p>"+ele.content+"</p><time>"+passTime(ele.time)+"</time><span class="+(ele.star?"star":"")+">&#xe60a;</span><div class="+"changestate"+">完成</div></li>";
+			}else if(state=="dune"&&ele.done==true){
+				str+="<li><p>"+ele.content+"</p><time>"+passTime(ele.time)+"</time><span class="+(ele.star?"star":"")+">&#xe60a;</span><div class="+"del"+">删除</div></li>";
+			}
+		});
+		$(".item_list").html(str);
+		iscroll.refresh();
+		addTouchEvent();
+	}
+	rende();
+	function passTime(time){
+		var date=new Date();
+		date.setTime(time);
+		var year=date.getFullYear();
+		var month=setZero(date.getMonth()+1);
+		var day=setZero(date.getDate());
+		var hours=setZero(date.getHours());
+		var minutes=setZero(date.getMinutes());
+		var seconds=setZero(date.getSeconds());
+		return year+"/"+month+"/"+day+"<br>"+hours+":"+minutes+":"+seconds;
+	}
+	function setZero(n){
+		return n<10?"0"+n:n;
+	}
+	function addTouchEvent(){
+		$("li").each(function(index,ele){
+			var hammerobj=new Hammer(ele);
+			var max=window.innerWidth/5;
+			var movex,sx;
+			var state="start";
+			var flag=true;
+			hammerobj.on("panstart",function(e){
+				sx=e.center.x;
+			})
+			hammerobj.on("panmove",function(e){
+				var cx=e.center.x;
+				movex=cx-sx;
+				if(movex>0&&state=="start"){
+					flag=false;
+					return;
+				}
+				if(movex<0&&state=="end"){
+					flag=false;
+					return;
+				}
+				if(Math.abs(movex)>max){
+					flag=false;
+					state=state=="start"?"end":"start";
+					if(state=="end"){
+						$(ele).transition({x:-max});
+					}else{
+						$(ele).transition({x:0});
+					}
+					return;
+				}
+				if(state=="end"){
+					movex=cx-sx-movex;
+				}
+				flag=true;
+				$(ele).css("x",movex);
+			})
+			hammerobj.on("panend",function(){
+				if(!flag)return;
+				ele.style.transition="all 0.5s";
+				if(Math.abs(movex)<max/2){
+					$(ele).transition({x:0});
+					state="start";
+				}else{
+					$(ele).transition({x:-max});
+					state="end";
+				}
+			})
+		})
+	}
+</script>	
+</body>
+</html>
